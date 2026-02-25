@@ -88,6 +88,18 @@ int main() {
     }
     printf("\n");
 
+    
+    // -------- OPTIONAL: TEST PRINT --------
+    printf("\nNeighbors of node 1:\n");
+    for (int i = row_ptr[1]; i < row_ptr[2]; i++) {
+        printf("%d ", col_ind[i]);
+    }
+    printf("\n");
+
+    printf("CSR construction complete.\n");
+
+
+
     // -------- FREE MEMORY --------
     free(degree);
     free(row_ptr);
