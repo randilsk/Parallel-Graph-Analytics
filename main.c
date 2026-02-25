@@ -3,7 +3,7 @@
 
 int main() {
 
-    FILE *file = fopen("dataset/web-google.txt", "r");
+    FILE *file = fopen("data-sets/web-Google.txt", "r");
     if (file == NULL) {
         printf("Error opening file\n");
         return 1;
