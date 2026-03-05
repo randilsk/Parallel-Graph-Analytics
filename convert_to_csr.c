@@ -88,17 +88,34 @@ int main() {
     }
     printf("\n");
 
-    
-    // -------- OPTIONAL: TEST PRINT --------
     printf("\nNeighbors of node 1:\n");
     for (int i = row_ptr[1]; i < row_ptr[2]; i++) {
         printf("%d ", col_ind[i]);
     }
     printf("\n");
 
-    printf("CSR construction complete.\n");
+    // -------- WRITE CSR TO BINARY FILE --------
+    FILE *out = fopen("outputs/csr_format_web-google", "wb");
+    if (out == NULL) {
+        printf("Error: Could not open output file for writing\n");
+        free(degree);
+        free(row_ptr);
+        free(col_ind);
+        free(current);
+        return 1;
+    }
 
+    fwrite(&num_nodes, sizeof(int), 1, out);
+    fwrite(&num_edges, sizeof(int), 1, out);
+    fwrite(row_ptr, sizeof(int), num_nodes + 1, out);
+    fwrite(col_ind, sizeof(int), num_edges, out);
+    fclose(out);
 
+    printf("\nCSR binary written to outputs/csr_format_web-google\n");
+    printf("  num_nodes = %d\n", num_nodes);
+    printf("  num_edges = %d\n", num_edges);
+    printf("  row_ptr size = %d ints\n", num_nodes + 1);
+    printf("  col_ind size = %d ints\n", num_edges);
 
     // -------- FREE MEMORY --------
     free(degree);
