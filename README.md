@@ -3,6 +3,20 @@
 **EE7218 - High Performance Computing**  
 **Course Project - 2026**
 
+## Project Status
+
+**Current Completion: ~30%**
+
+- ✅ **Serial baseline**: BFS and Connected Components implemented and tested
+- ✅ **OpenMP parallelization**: Parallel BFS with level-synchronous frontier traversal, tested on Ubuntu
+- 🔄 **MPI implementation**: In progress on `adding-mpi` branch
+- ⏳ **Hybrid, CUDA, analysis, and reporting**: Pending
+
+**Verified Results** (Ubuntu, web-Google dataset: 916K nodes, 5.1M edges):
+- Serial BFS: 0.067 s, 57.6M TEPS
+- OpenMP BFS (4 threads): 0.019 s, 206.6M TEPS
+- Speedup: 3.59×, Efficiency: 89.8%
+
 ## Team Members
 
 - **Randil K.A.G.S.** - EG/2021/4745
@@ -256,17 +270,17 @@ mpirun -np 4 ./bin/hybrid_cc <graph_file>
 
 ### 1. Implementation
 
-- [x] Serial implementation (C/C++)
-- [ ] Shared-memory parallel code (OpenMP)
-- [ ] Distributed-memory parallel code (MPI)
+- [x] Serial implementation (C/C++) - BFS and Connected Components
+- [x] Shared-memory parallel code (OpenMP) - OpenMP BFS with level-synchronous traversal
+- [ ] Distributed-memory parallel code (MPI) - In progress on `adding-mpi` branch
 - [ ] Hybrid parallel code (MPI+OpenMP)
 - [ ] GPU-accelerated code (CUDA)
 
 ### 2. Documentation
 
 - [x] Project README
-- [ ] Code documentation and comments
-- [ ] Build and execution instructions
+- [x] Build and execution instructions (tested on Ubuntu)
+- [ ] Inline code documentation and comments
 
 ### 3. Analysis Report
 
