@@ -283,7 +283,7 @@ int* run_cuda_bfs(int source, int num_nodes, int num_edges,
         cudaCheckError(cudaDeviceSynchronize());
 
         // Copy size of next frontier back to host
-        cudaCheckError(cudaMemcpy(&current_frontier_size, d_next_frontier_size, sizeof(int), cudaMemcpyHostToDevice));
+        cudaCheckError(cudaMemcpy(&current_frontier_size, d_next_frontier_size, sizeof(int), cudaMemcpyDeviceToHost));
 
         // Swap frontier buffers for the next level
         int *temp = d_current_frontier;
