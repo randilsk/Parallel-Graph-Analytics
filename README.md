@@ -1,122 +1,16 @@
-# Parallel Graph Analytics Using Multi-Level Parallelization
+# Parallel Graph Analytics
 
-**EE7218 - High Performance Computing**  
-**Course Project - 2026**
+**EE7218 High Performance Computing — Course Project 2026**
 
-## Project Status
-
-**Current Completion: ~30%**
-
-- ✅ **Serial baseline**: BFS and Connected Components implemented and tested
-- ✅ **OpenMP parallelization**: Parallel BFS with level-synchronous frontier traversal, tested on Ubuntu
-- 🔄 **MPI implementation**: In progress on `adding-mpi` branch
-- ⏳ **Hybrid, CUDA, analysis, and reporting**: Pending
-
-**Verified Results** (Ubuntu, web-Google dataset: 916K nodes, 5.1M edges):
-- Serial BFS: 0.067 s, 57.6M TEPS
-- OpenMP BFS (4 threads): 0.019 s, 206.6M TEPS
-- Speedup: 3.59×, Efficiency: 89.8%
-
-## Team Members
-
-- **Randil K.A.G.S.** - EG/2021/4745
-- **Wijerathne G.P.W.P.** - EG/2021/4871
+Randil K.A.G.S. (EG/2021/4745) · Wijerathne G.P.W.P. (EG/2021/4871)
 
 ---
 
-## Table of Contents
+## What This Project Does
 
-- [Motivation & Objectives](#motivation--objectives)
-- [Graph Operations](#graph-operations)
-- [Parallel Strategies](#parallel-strategies)
-- [Technical Implementation](#technical-implementation)
-- [Project Structure](#project-structure)
-- [Datasets](#datasets)
-- [Building the Project](#building-the-project)
-- [Running the Code](#running-the-code)
-- [Evaluation Metrics](#evaluation-metrics)
-- [Expected Deliverables](#expected-deliverables)
-- [References](#references)
+This project implements Breadth-First Search (BFS) and Connected Components (CC) on large real-world graphs using four levels of parallelism — Serial, OpenMP, MPI, and Hybrid MPI+OpenMP. All implementations use the CSR (Compressed Sparse Row) graph format and are benchmarked on the web-Google dataset (916K nodes, 5.1M edges).
 
----
-
-## Motivation & Objectives
-
-Large-scale infrastructure, communication, and transportation systems can be modeled as sparse graphs. Efficient graph traversal and connectivity analysis are essential for:
-
-- Routing optimization
-- Reliability assessment
-- System resilience studies
-
-### Project Aim
-
-Design and evaluate high-performance implementations of fundamental graph analytics operations using multiple parallel computing models, comparing performance across:
-
-- **Shared-memory** architectures (OpenMP)
-- **Distributed-memory** systems (MPI)
-- **Hybrid** approaches (MPI+OpenMP)
-- **GPU-based** platforms (CUDA)
-
----
-
-## Graph Operations
-
-### 1. Breadth-First Search (BFS)
-
-Performs level-wise traversal from a source vertex, generating:
-
-- Traversal levels for each vertex
-- Parent relationships for path reconstruction
-- Reachability information
-
-**Applications**: Shortest path finding, network diameter calculation, social network analysis
-
-### 2. Connected Components (CC)
-
-Identifies mutually reachable vertex groups by assigning component labels to vertices.
-
-**Applications**: Network connectivity analysis, community detection, infrastructure resilience
-
----
-
-## Parallel Strategies
-
-| Strategy              | Description                        | Key Features                                                                 |
-| --------------------- | ---------------------------------- | ---------------------------------------------------------------------------- |
-| **Serial**            | Baseline implementation            | Reference for correctness and performance comparison                         |
-| **OpenMP**            | Shared-memory parallelization      | Thread-local buffers, atomic visitation control                              |
-| **MPI**               | Distributed-memory parallelization | Vertex partitioning, message-passing boundary updates                        |
-| **Hybrid MPI+OpenMP** | Combined multi-level parallelism   | Inter-node (MPI) + Intra-node (OpenMP) optimization                          |
-| **CUDA**              | GPU acceleration                   | Frontier-based traversal, coalesced memory access, shared memory utilization |
-
----
-
-## Technical Implementation
-
-### Graph Representation
-
-- **Format**: Compressed Sparse Row (CSR)
-  - `row_ptr[]`: Index array for vertex adjacency list offsets
-  - `col_ind[]`: Column indices of neighbors
-- **Advantages**:
-  - Efficient neighbor access
-  - Cache locality optimization
-  - Suitable for both CPU and GPU
-
-### Programming Languages & Tools
-
-- **C/C++**: Core implementation language
-- **OpenMP**: Shared-memory parallelization
-- **MPI**: Distributed-memory communication
-- **CUDA**: GPU kernel programming
-- **Build System**: Makefile / CMake
-
-### Development Environment
-
-- Compiler: GCC/G++ with OpenMP support
-- MPI Implementation: OpenMPI / MPICH
-- CUDA Toolkit: NVIDIA CUDA 11.0+
-- Operating System: Linux (recommended) / Windows with WSL
+The goal is to compare how much speedup each parallelization strategy achieves and analyze how performance scales with more threads or processes.
 
 ---
 
@@ -124,206 +18,183 @@ Identifies mutually reachable vertex groups by assigning component labels to ver
 
 ```
 Parallel-Graph-Analytics/
+├── Makefile
 ├── README.md
-├── datasets/               # Graph datasets in CSR format
 ├── src/
-│   ├── serial/            # Serial baseline implementations
-│   ├── openmp/            # OpenMP parallel implementations
-│   ├── mpi/               # MPI distributed implementations
-│   ├── hybrid/            # MPI+OpenMP hybrid implementations
-│   └── cuda/              # CUDA GPU implementations
-├── include/               # Header files
-├── scripts/               # Build and run scripts
-├── results/               # Performance results and logs
-├── analysis/              # Analysis scripts and visualizations
-└── docs/                  # Documentation and reports
+│   ├── serial_analysis.c     # Serial BFS + Connected Components
+│   ├── openmp_bfs.c          # OpenMP parallel BFS
+│   ├── mpi_bfs.c             # MPI distributed BFS
+│   └── hybrid_bfs.c          # Hybrid MPI+OpenMP BFS (in progress)
+├── data/
+│   ├── web-Google.txt        # Raw edge-list dataset
+│   └── convert_to_csr.c      # Converts edge-list to CSR binary
+├── outputs/
+│   └── csr_format_web-google # Generated CSR binary (after make run-convert)
+├── bin/                      # Compiled binaries (generated by make)
+├── include/                  # Header files
+├── scripts/                  # Benchmark and run scripts
+├── tests/                    # Validation scripts
+└── docs/                     # Report and diagrams
 ```
 
 ---
 
-## Datasets
+## Dataset
 
-### Source
+**web-Google** from [Stanford SNAP](http://snap.stanford.edu/data/web-Google.html)
 
-Large-scale real-world graph datasets from publicly available repositories:
-
-- [Stanford Network Analysis Project (SNAP)](http://snap.stanford.edu/data/)
-- [SuiteSparse Matrix Collection](https://sparse.tamu.edu/)
-- [Network Repository](http://networkrepository.com/)
-
-### Dataset Characteristics
-
-- Varying sizes (vertices and edges)
-- Different structural properties (density, diameter, clustering coefficient)
-- Real-world and synthetic graphs
-
-### Preprocessing
-
-- Convert to CSR format
-- Generate metadata (number of vertices, edges, average degree)
-- Validation of graph structure
+| Property | Value |
+|---|---|
+| Nodes | 916,428 |
+| Edges | 5,105,039 |
+| Type | Directed web graph |
 
 ---
 
-## Building the Project
-
-### Prerequisites
+## Build Requirements
 
 ```bash
-# Install GCC/G++ with OpenMP support
-# Install MPI (OpenMPI or MPICH)
-# Install CUDA Toolkit (for GPU implementations)
+sudo apt install gcc libgomp1 openmpi-bin libopenmpi-dev
 ```
 
-### Compilation
-
+Check everything is available:
 ```bash
-# Serial version
-make serial
-
-# OpenMP version
-make openmp
-
-# MPI version
-make mpi
-
-# Hybrid MPI+OpenMP version
-make hybrid
-
-# CUDA version
-make cuda
-
-# Build all versions
-make all
+make check-deps
 ```
 
 ---
 
-## Running the Code
-
-### Serial Execution
+## Quick Start
 
 ```bash
-./bin/serial_bfs <graph_file> <source_vertex>
-./bin/serial_cc <graph_file>
+# 1. Compile everything
+make
+
+# 2. Generate CSR binary from raw dataset
+make run-convert
+
+# 3. Run all implementations
+make run-serial
+make run-openmp THREADS=4
+make run-mpi NP=4
 ```
 
-### OpenMP Execution
+---
 
-```bash
-export OMP_NUM_THREADS=16
-./bin/openmp_bfs <graph_file> <source_vertex>
-./bin/openmp_cc <graph_file>
+## All Make Commands
+
+| Command | What it does |
+|---|---|
+| `make` | Compile all implementations |
+| `make serial` | Compile serial only |
+| `make openmp` | Compile OpenMP only |
+| `make mpi` | Compile MPI only |
+| `make run-convert` | Generate CSR binary from web-Google.txt |
+| `make run-serial` | Run serial BFS + CC |
+| `make run-openmp THREADS=N` | Run OpenMP BFS with N threads |
+| `make run-mpi NP=N` | Run MPI BFS with N processes |
+| `make run-all` | Convert dataset then run all three |
+| `make clean` | Remove compiled binaries |
+| `make check-deps` | Check gcc, mpicc, mpirun are installed |
+
+Override source node: `make run-serial SOURCE_NODE=5`
+
+---
+
+## Results (web-Google, source node 0)
+
+### BFS Performance
+
+| Implementation | Threads/Procs | Runtime (s) | MTEPS | Speedup |
+|---|---|---|---|---|
+| Serial | 1 | 0.0368 | 105 | 1.0× |
+| OpenMP | 2 | 0.0229 | 170 | 1.6× |
+| OpenMP | 4 | 0.0153 | 254 | 2.4× |
+| OpenMP | 8 | 0.0122 | 318 | 3.0× |
+| MPI | 2 | 0.0254 | 153 | 1.4× |
+| MPI | 4 | 0.0211 | 184 | 1.7× |
+| MPI | 8 | 0.0259 | 150 | 1.4× |
+
+### Connected Components (Serial)
+
+| Metric | Value |
+|---|---|
+| Runtime | 0.044 s |
+| Components found | 230,622 |
+| Largest component | 600,493 nodes |
+
+### Correctness
+
+All implementations reach exactly **600,493 / 916,428 nodes** from source node 0, matching the serial baseline.
+
+---
+
+## How It Works
+
+### Graph Format — CSR (Compressed Sparse Row)
+
+The raw dataset is an edge-list text file. `convert_to_csr.c` converts it to a compact binary:
+
+```
+[num_nodes][num_edges][row_ptr array][col_ind array]
 ```
 
-### MPI Execution
+- `row_ptr[i]` → start index of node i's neighbours in col_ind
+- `col_ind[j]` → neighbour node id
 
-```bash
-mpirun -np 4 ./bin/mpi_bfs <graph_file> <source_vertex>
-mpirun -np 4 ./bin/mpi_cc <graph_file>
-```
+This format gives cache-friendly sequential access during BFS.
 
-### Hybrid MPI+OpenMP Execution
+### Serial BFS
 
-```bash
-export OMP_NUM_THREADS=8
-mpirun -np 4 ./bin/hybrid_bfs <graph_file> <source_vertex>
-mpirun -np 4 ./bin/hybrid_cc <graph_file>
-```
+Standard queue-based BFS. Used as the correctness baseline for all parallel versions.
 
-### CUDA Execution
+### OpenMP BFS
 
-```bash
-./bin/cuda_bfs <graph_file> <source_vertex>
-./bin/cuda_cc <graph_file>
-```
+Level-synchronous parallel BFS. Each level's frontier is processed in parallel across threads using:
+- `#pragma omp parallel for` with `schedule(dynamic)` for load balancing
+- `__sync_bool_compare_and_swap` for atomic node visitation
+- `__sync_fetch_and_add` for atomic frontier indexing
+
+### MPI BFS
+
+Distributed BFS where each rank owns a contiguous partition of vertices:
+- CSR rows are scattered to ranks via `MPI_Scatterv`
+- Each level, ranks discover unvisited neighbours and send them to their owner ranks via `MPI_Alltoallv`
+- A global visited bitmap is synced via `MPI_Allreduce(BOR)` to prevent duplicate sends across ranks
+
+### Hybrid MPI+OpenMP *(in progress)*
+
+Combines MPI for inter-node distribution with OpenMP threads for intra-node parallelism within each rank's frontier expansion.
+
+---
+
+## Implementation Status
+
+| Component | Status |
+|---|---|
+| Serial BFS + CC | ✅ Complete |
+| OpenMP BFS | ✅ Complete |
+| MPI BFS | ✅ Complete |
+| Hybrid MPI+OpenMP | 🔄 In progress |
+| CUDA BFS | ⏳ Pending |
+| Benchmark script | ⏳ Pending |
+| Analysis report | ⏳ Pending |
 
 ---
 
 ## Evaluation Metrics
 
-### 1. Correctness & Accuracy
-
-- **Validation**: Compare parallel outputs against serial baseline
-- **Metrics**: Exact comparison or Root Mean Square Error (RMSE)
-
-### 2. Performance Metrics
-
-- **Runtime**: Wall-clock time (seconds)
-- **Speedup**: $S_p = \frac{T_1}{T_p}$ (serial time / parallel time)
-- **Parallel Efficiency**: $E_p = \frac{S_p}{p}$ (speedup / number of processors)
-
-### 3. Throughput
-
-- **TEPS**: Traversed Edges Per Second
-- Formula: $TEPS = \frac{\text{Number of edges traversed}}{\text{Execution time}}$
-
-### 4. Scalability Analysis
-
-- **Strong Scaling**: Fixed problem size, varying number of processors
-- **Weak Scaling**: Problem size scales proportionally with processors
-- **Communication Overhead**: Time spent in inter-process communication
-
----
-
-## Expected Deliverables
-
-### 1. Implementation
-
-- [x] Serial implementation (C/C++) - BFS and Connected Components
-- [x] Shared-memory parallel code (OpenMP) - OpenMP BFS with level-synchronous traversal
-- [ ] Distributed-memory parallel code (MPI) - In progress on `adding-mpi` branch
-- [ ] Hybrid parallel code (MPI+OpenMP)
-- [ ] GPU-accelerated code (CUDA)
-
-### 2. Documentation
-
-- [x] Project README
-- [x] Build and execution instructions (tested on Ubuntu)
-- [ ] Inline code documentation and comments
-
-### 3. Analysis Report
-
-- [ ] Parallelization strategy diagrams
-- [ ] Accuracy validation results
-- [ ] Timing comparisons with parameter variation
-- [ ] Speedup and efficiency graphs
-- [ ] Strong and weak scaling analysis
-- [ ] Communication overhead analysis
-- [ ] Performance comparison across all implementations
-
-### 4. Presentation
-
-- [ ] Project presentation slides
-- [ ] Demo of implementations
+- **Runtime** — wall-clock time in seconds
+- **MTEPS** — Million Traversed Edges Per Second = edges / runtime / 1e6
+- **Speedup** — serial runtime / parallel runtime
+- **Parallel Efficiency** — speedup / number of threads or processes
+- **Strong scaling** — fixed problem size, varying thread/process count
 
 ---
 
 ## References
 
-1. Beamer, S., Asanović, K., & Patterson, D. (2012). "Direction-optimizing breadth-first search." _SC'12: Proceedings of the International Conference on High Performance Computing, Networking, Storage and Analysis_.
-
-2. Bader, D. A., & Madduri, K. (2006). "Designing multithreaded algorithms for breadth-first search and st-connectivity on the Cray MTA-2." _ICPP 2006_.
-
-3. Merrill, D., Garland, M., & Grimshaw, A. (2012). "Scalable GPU graph traversal." _ACM SIGPLAN Notices, 47(8)_.
-
-4. Slota, G. M., Madduri, K., & Rajamanickam, S. (2014). "BFS and coloring-based parallel algorithms for strongly connected components and related problems." _IPDPS 2014_.
-
----
-
-## License
-
-This project is developed as part of the EE7218 High Performance Computing course.
-
----
-
-## Contact
-
-For questions or issues, please contact:
-
-- Randil K.A.G.S. - [Email]
-- Wijerathne G.P.W.P. - [Email]
-
----
-
-**Last Updated**: February 25, 2026
+1. Beamer et al. (2012). *Direction-optimizing BFS*. SC'12.
+2. Bader & Madduri (2006). *Multithreaded BFS on Cray MTA-2*. ICPP.
+3. Merrill et al. (2012). *Scalable GPU graph traversal*. SIGPLAN.
+4. Dataset: [web-Google, Stanford SNAP](http://snap.stanford.edu/data/web-Google.html)
