@@ -176,29 +176,38 @@ __global__ void cc_init_kernel(int *parent, int num_nodes) {
     }
 }
 
+__device__ int find_root(int *parent, int x) {
+    while (parent[x] != x) {
+        parent[x] = parent[parent[x]]; // path compression while finding
+        x = parent[x];
+    }
+    return x;
+}
+
 __global__ void cc_hook_kernel(const int *row_ptr, const int *col_ind, int *parent, int num_nodes, int *changed) {
     int u = blockIdx.x * blockDim.x + threadIdx.x;
     if (u >= num_nodes) return;
 
-    int p_u = parent[u];
+    int root_u = find_root(parent, u);
     int start_edge = row_ptr[u];
     int end_edge = row_ptr[u + 1];
 
     for (int i = start_edge; i < end_edge; i++) {
         int v = col_ind[i];
-        int p_v = parent[v];
+        int root_v = find_root(parent, v);
 
-        // If the components are different, hook the larger component root to the smaller one
-        if (p_u < p_v) {
-            int old_val = atomicMin(&parent[p_v], p_u);
-            if (old_val != p_u) {
+        if (root_u != root_v) {
+            int small = min(root_u, root_v);
+            int large = max(root_u, root_v);
+            int old = atomicMin(&parent[large], small);
+            if (old != small) {
                 *changed = 1;
             }
         }
     }
 }
 
-__global__ void cc_jump_kernel(int *parent, int num_nodes, int *changed) {
+__global__ void cc_jump_kernel(int *parent, int num_nodes) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= num_nodes) return;
 
@@ -206,7 +215,24 @@ __global__ void cc_jump_kernel(int *parent, int num_nodes, int *changed) {
     int gp = parent[p];
     if (p != gp) {
         parent[idx] = gp;
-        *changed = 1;
+    }
+}
+
+__global__ void cc_flatten_kernel(int *parent, int num_nodes) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= num_nodes) return;
+
+    // Chase all the way to root
+    int root = idx;
+    while (parent[root] != root)
+        root = parent[root];
+
+    // Compress path
+    int curr = idx;
+    while (parent[curr] != root) {
+        int next = parent[curr];
+        parent[curr] = root;
+        curr = next;
     }
 }
 
@@ -359,7 +385,7 @@ int run_cuda_cc(int num_nodes, int num_edges,
         cudaCheckError(cudaDeviceSynchronize());
 
         // 2. Jump step: Flatten tree structure by pointer jumping to grandparent
-        cc_jump_kernel<<<grid_size, block_size>>>(d_parent, num_nodes, d_changed);
+        cc_jump_kernel<<<grid_size, block_size>>>(d_parent, num_nodes);
         cudaCheckError(cudaDeviceSynchronize());
 
         // Check if convergence was reached in this round
@@ -367,7 +393,10 @@ int run_cuda_cc(int num_nodes, int num_edges,
         gpu_iterations++;
     }
 
+    // 3. Final path compression to ensure all nodes point directly to their root
+    cc_flatten_kernel<<<grid_size, block_size>>>(d_parent, num_nodes);
     cudaCheckError(cudaDeviceSynchronize());
+
     double end_time = get_time();
     gpu_time = end_time - start_time;
 
