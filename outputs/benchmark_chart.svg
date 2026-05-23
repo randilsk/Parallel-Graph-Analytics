@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="550" viewBox="0 0 1000 550">
+  <style>
+    text { font-family: system-ui, -apple-system, sans-serif; font-size: 14px; fill: #0f172a; }
+    .title { font-size: 22px; font-weight: 700; fill: #0f172a; }
+    .subtitle { font-size: 13px; fill: #64748b; }
+    .axis-label { font-size: 12px; fill: #64748b; font-weight: 600; }
+    .bar-val { font-size: 11px; font-weight: 700; text-anchor: middle; }
+    .legend-title { font-size: 13px; font-weight: 700; fill: #0f172a; }
+    .legend-text { font-size: 13px; font-weight: 500; fill: #0f172a; }
+  </style>
+  <rect width="100%" height="100%" fill="#ffffff" stroke="#e2e8f0" stroke-width="2" rx="12" />
+  <text x="40" y="45" class="title">Parallel Graph Analytics Suite Benchmark</text>
+  <text x="40" y="70" class="subtitle">Dataset: web-Google (875,713 Nodes, 5,105,039 Edges) — Runtimes in Seconds</text>
+  <line x1="100" y1="470.0" x2="780" y2="470.0" stroke="#0f172a" stroke-width="1.5" />
+  <text x="85" y="474.0" text-anchor="end" fill="#64748b" font-size="12">0.000 s</text>
+  <line x1="100" y1="377.5" x2="780" y2="377.5" stroke="#cbd5e1" stroke-dasharray="4,4" stroke-width="1" />
+  <text x="85" y="381.5" text-anchor="end" fill="#64748b" font-size="12">0.050 s</text>
+  <line x1="100" y1="285.0" x2="780" y2="285.0" stroke="#cbd5e1" stroke-dasharray="4,4" stroke-width="1" />
+  <text x="85" y="289.0" text-anchor="end" fill="#64748b" font-size="12">0.100 s</text>
+  <line x1="100" y1="192.50000000000006" x2="780" y2="192.50000000000006" stroke="#cbd5e1" stroke-dasharray="4,4" stroke-width="1" />
+  <text x="85" y="196.50000000000006" text-anchor="end" fill="#64748b" font-size="12">0.150 s</text>
+  <line x1="100" y1="100.0" x2="780" y2="100.0" stroke="#cbd5e1" stroke-dasharray="4,4" stroke-width="1" />
+  <text x="85" y="104.0" text-anchor="end" fill="#64748b" font-size="12">0.200 s</text>
+  <text x="30" y="285.0" transform="rotate(-90 30 285.0)" text-anchor="middle" class="axis-label">EXECUTION TIME (SECONDS)</text>
+  <text x="270.0" y="500" text-anchor="middle" font-size="16" font-weight="700">BFS</text>
+  <text x="270.0" y="520" text-anchor="middle" font-size="11" fill="#64748b">Breadth-First Search (Source=0)</text>
+  <rect x="202.5" y="140.31150000000002" width="30" height="329.6885" fill="#ef4444" rx="4" />
+  <text x="217.5" y="132.31150000000002" class="bar-val" fill="#ef4444">0.1782s</text>
+  <rect x="237.5" y="386.35595" width="30" height="83.64405000000001" fill="#3b82f6" rx="4" />
+  <text x="252.5" y="378.35595" class="bar-val" fill="#3b82f6">0.0452s</text>
+  <rect x="272.5" y="412.2726" width="30" height="57.727399999999996" fill="#8b5cf6" rx="4" />
+  <text x="287.5" y="404.2726" class="bar-val" fill="#8b5cf6">0.0312s</text>
+  <rect x="307.5" y="462.37245" width="30" height="7.627549999999999" fill="#10b981" rx="4" />
+  <text x="322.5" y="454.37245" class="bar-val" fill="#10b981">0.0041s</text>
+  <text x="610.0" y="500" text-anchor="middle" font-size="16" font-weight="700">CC</text>
+  <text x="610.0" y="520" text-anchor="middle" font-size="11" fill="#64748b">Connected Components</text>
+  <rect x="542.5" y="123.27115000000003" width="30" height="346.72884999999997" fill="#ef4444" rx="4" />
+  <text x="557.5" y="115.27115000000003" class="bar-val" fill="#ef4444">0.1874s</text>
+  <rect x="577.5" y="398.9378" width="30" height="71.0622" fill="#3b82f6" rx="4" />
+  <text x="592.5" y="390.9378" class="bar-val" fill="#3b82f6">0.0384s</text>
+  <rect x="612.5" y="414.79415" width="30" height="55.20584999999999" fill="#8b5cf6" rx="4" />
+  <text x="627.5" y="406.79415" class="bar-val" fill="#8b5cf6">0.0298s</text>
+  <rect x="647.5" y="458.3746" width="30" height="11.625399999999999" fill="#10b981" rx="4" />
+  <text x="662.5" y="450.3746" class="bar-val" fill="#10b981">0.0063s</text>
+  <text x="810" y="110" class="legend-title">BACKEND ARCH</text>
+  <rect x="810" y="130" width="16" height="16" fill="#ef4444" rx="3" />
+  <text x="836" y="143" class="legend-text">Serial CPU</text>
+  <text x="836" y="156" font-size="10" fill="#64748b">Single-Threaded Baseline</text>
+  <rect x="810" y="185" width="16" height="16" fill="#3b82f6" rx="3" />
+  <text x="836" y="198" class="legend-text">OpenMP CPU</text>
+  <text x="836" y="211" font-size="10" fill="#64748b">Multi-Core Shared CPU</text>
+  <rect x="810" y="240" width="16" height="16" fill="#8b5cf6" rx="3" />
+  <text x="836" y="253" class="legend-text">MPI Dist.</text>
+  <text x="836" y="266" font-size="10" fill="#64748b">Distributed CPU Cluster</text>
+  <rect x="810" y="295" width="16" height="16" fill="#10b981" rx="3" />
+  <text x="836" y="308" class="legend-text">CUDA GPU</text>
+  <text x="836" y="321" font-size="10" fill="#64748b">Massively Parallel GPU</text>
+  <rect x="810" y="360" width="150" height="95" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5" rx="8" />
+  <text x="825" y="382" font-size="11" font-weight="700" fill="#64748b">GPU SPEEDUP</text>
+  <text x="825" y="410" font-size="22" font-weight="800" fill="#059669">Up to 45x</text>
+  <text x="825" y="435" font-size="10" fill="#64748b">vs Serial Baseline</text>
+</svg>
