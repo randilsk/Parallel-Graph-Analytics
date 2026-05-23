@@ -32,6 +32,7 @@ SERIAL      = $(BIN)/serial_analysis
 OPENMP_BFS  = $(BIN)/openmp_bfs
 MPI_BFS     = $(BIN)/mpi_bfs
 CONVERTER   = $(BIN)/convert_to_csr
+PTHREADS_BFS = $(BIN)/pthreads_bfs
 
 # --- Dataset -----------------------------------------------------------------
 DATASET     = $(OUT)/csr_format_web-google
@@ -80,6 +81,12 @@ mpi: $(MPI_BFS)
 $(MPI_BFS): $(SRC)/mpi_bfs.c
 	$(MPICC) $(CFLAGS) -o $@ $<
 
+.PHONY: pthreads
+pthreads: $(PTHREADS_BFS)
+
+$(PTHREADS_BFS): $(SRC)/pthreads_bfs.c
+	$(CC) $(CFLAGS) -pthread -o $@ $<
+
 # =============================================================================
 # Run targets
 # =============================================================================
@@ -104,8 +111,13 @@ run-mpi: $(MPI_BFS) $(DATASET)
 	@echo "--- MPI BFS  processes=$(NP)  source=$(SOURCE_NODE) ---"
 	mpirun -np $(NP) ./$(MPI_BFS) $(DATASET) $(SOURCE_NODE)
 
+.PHONY: run-pthreads
+run-pthreads: $(PTHREADS_BFS) $(DATASET)
+	@echo "--- Pthreads BFS  threads=$(THREADS)  source=$(SOURCE_NODE) ---"
+	./$(PTHREADS_BFS) $(DATASET) $(SOURCE_NODE) $(THREADS)
+
 .PHONY: run-all
-run-all: run-convert run-serial run-openmp run-mpi
+run-all: run-convert run-serial run-openmp run-mpi run-pthreads
 	@echo ""
 	@echo "All implementations finished."
 
@@ -115,7 +127,7 @@ run-all: run-convert run-serial run-openmp run-mpi
 .PHONY: clean
 clean:
 	@echo "Removing binaries..."
-	rm -f $(SERIAL) $(OPENMP_BFS) $(MPI_BFS) $(CONVERTER)
+	rm -f $(SERIAL) $(OPENMP_BFS) $(MPI_BFS) $(CONVERTER) $(PTHREADS_BFS)
 	@echo "Done."
 
 # Check that required tools are available
