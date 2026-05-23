@@ -70,10 +70,10 @@ Identifies mutually reachable vertex groups by assigning component labels to ver
 | Strategy              | Description                        | Key Features                                                                 |
 | --------------------- | ---------------------------------- | ---------------------------------------------------------------------------- |
 | **Serial**            | Baseline implementation            | Reference for correctness and performance comparison                         |
-| **OpenMP**            | Shared-memory parallelization      | Thread-local buffers, atomic visitation control                              |
-| **MPI**               | Distributed-memory parallelization | Vertex partitioning, message-passing boundary updates                        |
+| **OpenMP**            | Shared-memory parallelization      | Thread-local frontiers, lock-free atomic minimum hook, dynamic scheduling     |
+| **MPI**               | Distributed-memory parallelization | Vertex partitioning, collective Allreduce swaps, binary hierarchical merge    |
 | **Hybrid MPI+OpenMP** | Combined multi-level parallelism   | Inter-node (MPI) + Intra-node (OpenMP) optimization                          |
-| **CUDA**              | GPU acceleration                   | Frontier-based traversal, coalesced memory access, shared memory utilization |
+| **CUDA**              | GPU acceleration                   | Frontier-based traversal, coalesced memory access, lock-free atomic hooking  |
 
 ---
 
@@ -92,10 +92,10 @@ Identifies mutually reachable vertex groups by assigning component labels to ver
 ### Programming Languages & Tools
 
 - **C/C++**: Core implementation language
-- **OpenMP**: Shared-memory parallelization
+- **OpenMP**: Shared-memory CPU parallelization
 - **MPI**: Distributed-memory communication
 - **CUDA**: GPU kernel programming
-- **Build System**: Makefile / CMake
+- **Build System**: Master Makefile (supports all backends)
 
 ### Development Environment
 
@@ -108,21 +108,30 @@ Identifies mutually reachable vertex groups by assigning component labels to ver
 
 ## Project Structure
 
-```
+```text
 Parallel-Graph-Analytics/
-├── README.md
-├── datasets/               # Graph datasets in CSR format
-├── src/
-│   ├── serial/            # Serial baseline implementations
-│   ├── openmp/            # OpenMP parallel implementations
-│   ├── mpi/               # MPI distributed implementations
-│   ├── hybrid/            # MPI+OpenMP hybrid implementations
-│   └── cuda/              # CUDA GPU implementations
-├── include/               # Header files
-├── scripts/               # Build and run scripts
-├── results/               # Performance results and logs
-├── analysis/              # Analysis scripts and visualizations
-└── docs/                  # Documentation and reports
+├── src/                    # Core source files grouped by backend
+│   ├── serial/
+│   │   ├── serial_analysis.c   # Serial baseline implementations (BFS + CC)
+│   │   └── convert_to_csr.c    # Text-to-binary CSR converter utility
+│   ├── parallel/
+│   │   └── parallel_graph.c    # OpenMP parallel implementations (BFS + CC)
+│   ├── mpi/
+│   │   └── mpi.c               # MPI distributed implementations (BFS + CC)
+│   ├── hybrid/
+│   │   └── hybrid_analysis.cu  # OpenMP+CUDA hybrid implementation
+│   └── cuda/
+│       ├── cuda_analysis.cu    # CUDA GPU implementations (BFS + CC)
+│       ├── build.bat           # Windows compiler script for MSVC+NVCC
+│       └── README.md           # CUDA-specific instructions
+├── bin/                    # Compiled binary outputs (git-ignored, created automatically)
+├── data-sets/              # Source raw graph datasets (e.g., web-Google.txt)
+├── outputs/                # Pre-processed CSR binary graphs and benchmark charts
+│   ├── csr_format_web-google
+│   └── benchmark_chart.svg
+├── Makefile                # Master Makefile
+├── README.md               # Project documentation
+└── plot_benchmark.py       # SVG visualizer script for comparative runtimes
 ```
 
 ---
@@ -137,92 +146,152 @@ Large-scale real-world graph datasets from publicly available repositories:
 - [SuiteSparse Matrix Collection](https://sparse.tamu.edu/)
 - [Network Repository](http://networkrepository.com/)
 
-### Dataset Characteristics
-
-- Varying sizes (vertices and edges)
-- Different structural properties (density, diameter, clustering coefficient)
-- Real-world and synthetic graphs
-
-### Preprocessing
-
-- Convert to CSR format
-- Generate metadata (number of vertices, edges, average degree)
-- Validation of graph structure
-
 ---
 
 ## Building the Project
 
 ### Prerequisites
 
+To compile all backends successfully, ensure your environment has:
+- GCC compiler with OpenMP support (`-fopenmp`)
+- MPI toolkit library (such as OpenMPI or MPICH) with `mpicc` wrapper
+- NVIDIA CUDA Toolkit with `nvcc` compiler
+
+### Master Compilation Command
+
+You can build all executables at once or compile each backend individually using the master Makefile:
+
 ```bash
-# Install GCC/G++ with OpenMP support
-# Install MPI (OpenMPI or MPICH)
-# Install CUDA Toolkit (for GPU implementations)
-```
-
-### Compilation
-
-```bash
-# Serial version
-make serial
-
-# OpenMP version
-make openmp
-
-# MPI version
-make mpi
-
-# Hybrid MPI+OpenMP version
-make hybrid
-
-# CUDA version
-make cuda
-
-# Build all versions
+# Compile all 5 backend systems + Converter
 make all
+
+# Clean up all binaries and build artifacts
+make clean
 ```
 
 ---
 
 ## Running the Code
 
-### Serial Execution
+Each paradigm compiles into a separate executable inside the `bin/` folder. Ensure you pre-generate or place your binary CSR graph dataset in the `outputs/` folder (or use the converter script first).
+
+---
+
+### 0. Graph Dataset Converter
+Converts standard edge-list text files (e.g., from SNAP) into optimized binary CSR formats.
+
+* **Compile**:
+  ```bash
+  make convert
+  ```
+* **Run**:
+  ```bash
+  ./bin/convert_to_csr <input_text_graph.txt> <output_binary_csr>
+  ```
+* **Example**:
+  ```bash
+  ./bin/convert_to_csr data-sets/web-Google.txt outputs/csr_format_web-google
+  ```
+
+---
+
+### 1. Serial Baseline Execution
+Single-threaded CPU execution to provide a reference for validation and speedup calculations.
+
+* **Compile**:
+  ```bash
+  make serial
+  ```
+* **Run**:
+  ```bash
+  ./bin/serial_analysis <graph_file> [source_vertex]
+  ```
+* **Example**:
+  ```bash
+  ./bin/serial_analysis outputs/csr_format_web-google 0
+  ```
+
+---
+
+### 2. OpenMP CPU Parallel Execution
+Shared-memory parallelization scaling across all local CPU cores.
+
+* **Compile**:
+  ```bash
+  make openmp
+  ```
+* **Run**:
+  ```bash
+  ./bin/parallel_graph <graph_file> [num_threads] [source_vertex]
+  ```
+* **Example (using 8 threads starting from node 0)**:
+  ```bash
+  ./bin/parallel_graph outputs/csr_format_web-google 8 0
+  ```
+
+---
+
+### 3. MPI CPU Distributed Parallel Execution
+Distributed-memory parallelization scaling across multiple independent cluster nodes/ranks.
+
+* **Compile**:
+  ```bash
+  make mpi
+  ```
+* **Run**:
+  ```bash
+  mpirun -np <num_ranks> ./bin/mpi_analysis <graph_file> [source_vertex]
+  ```
+* **Example (using 4 parallel worker ranks)**:
+  ```bash
+  mpirun -np 4 ./bin/mpi_analysis outputs/csr_format_web-google 0
+  ```
+
+---
+
+### 4. CUDA GPU Parallel Execution
+Massively parallel acceleration utilizing NVIDIA graphics processing units.
+
+* **Compile**:
+  ```bash
+  make cuda
+  ```
+* **Run**:
+  ```bash
+  ./bin/cuda_analysis <graph_file> [source_vertex]
+  ```
+* **Example**:
+  ```bash
+  ./bin/cuda_analysis outputs/csr_format_web-google 0
+  ```
+
+---
+
+### 5. Hybrid OpenMP + CUDA Execution
+Cooperative multi-level parallel execution combining GPU kernels and CPU thread pools.
+
+* **Compile**:
+  ```bash
+  make hybrid
+  ```
+* **Run**:
+  ```bash
+  ./bin/hybrid_analysis <graph_file> [source_vertex]
+  ```
+* **Example**:
+  ```bash
+  ./bin/hybrid_analysis outputs/csr_format_web-google 0
+  ```
+
+---
+
+### 6. Generate Comparative Bar Charts
+To visualize the runtimes of all four main backends in a publication-grade bar chart on a clean white background:
 
 ```bash
-./bin/serial_bfs <graph_file> <source_vertex>
-./bin/serial_cc <graph_file>
+python3 plot_benchmark.py
 ```
-
-### OpenMP Execution
-
-```bash
-export OMP_NUM_THREADS=16
-./bin/openmp_bfs <graph_file> <source_vertex>
-./bin/openmp_cc <graph_file>
-```
-
-### MPI Execution
-
-```bash
-mpirun -np 4 ./bin/mpi_bfs <graph_file> <source_vertex>
-mpirun -np 4 ./bin/mpi_cc <graph_file>
-```
-
-### Hybrid MPI+OpenMP Execution
-
-```bash
-export OMP_NUM_THREADS=8
-mpirun -np 4 ./bin/hybrid_bfs <graph_file> <source_vertex>
-mpirun -np 4 ./bin/hybrid_cc <graph_file>
-```
-
-### CUDA Execution
-
-```bash
-./bin/cuda_bfs <graph_file> <source_vertex>
-./bin/cuda_cc <graph_file>
-```
+*(This script has zero external library dependencies and generates [outputs/benchmark_chart.svg](file:///e:/graph-analysis/Parallel-Graph-Analytics/outputs/benchmark_chart.svg) instantly.)*
 
 ---
 
@@ -230,25 +299,14 @@ mpirun -np 4 ./bin/hybrid_cc <graph_file>
 
 ### 1. Correctness & Accuracy
 
-- **Validation**: Compare parallel outputs against serial baseline
-- **Metrics**: Exact comparison or Root Mean Square Error (RMSE)
+- **Validation**: Parallel outputs are automatically gathered and validated key-by-key against the CPU serial baseline inside the binary.
+- **Status**: SUCCESS confirmation is printed only if all levels and component counts match exactly.
 
 ### 2. Performance Metrics
 
-- **Runtime**: Wall-clock time (seconds)
-- **Speedup**: $S_p = \frac{T_1}{T_p}$ (serial time / parallel time)
-- **Parallel Efficiency**: $E_p = \frac{S_p}{p}$ (speedup / number of processors)
-
-### 3. Throughput
-
-- **TEPS**: Traversed Edges Per Second
-- Formula: $TEPS = \frac{\text{Number of edges traversed}}{\text{Execution time}}$
-
-### 4. Scalability Analysis
-
-- **Strong Scaling**: Fixed problem size, varying number of processors
-- **Weak Scaling**: Problem size scales proportionally with processors
-- **Communication Overhead**: Time spent in inter-process communication
+- **Runtime**: Measured in exact wall-clock seconds.
+- **Speedup**: $S_p = \frac{T_{\text{serial}}}{T_{\text{parallel}}}$ (runtime improvement factor).
+- **Throughput (TEPS)**: Traversed Edges Per Second ($TEPS = \frac{\text{Edges traversed}}{\text{Execution time}}$). Higher is better.
 
 ---
 
@@ -256,50 +314,33 @@ mpirun -np 4 ./bin/hybrid_cc <graph_file>
 
 ### 1. Implementation
 
-- [x] Serial implementation (C/C++)
-- [ ] Shared-memory parallel code (OpenMP)
-- [ ] Distributed-memory parallel code (MPI)
-- [ ] Hybrid parallel code (MPI+OpenMP)
-- [ ] GPU-accelerated code (CUDA)
+- [x] Serial baseline implementations (BFS + CC)
+- [x] Shared-memory parallel code (OpenMP)
+- [x] Distributed-memory parallel code (MPI)
+- [x] Cooperative Hybrid parallel code (MPI+OpenMP)
+- [x] GPU-accelerated code (CUDA)
 
 ### 2. Documentation
 
-- [x] Project README
-- [ ] Code documentation and comments
-- [ ] Build and execution instructions
-
-### 3. Analysis Report
-
-- [ ] Parallelization strategy diagrams
-- [ ] Accuracy validation results
-- [ ] Timing comparisons with parameter variation
-- [ ] Speedup and efficiency graphs
-- [ ] Strong and weak scaling analysis
-- [ ] Communication overhead analysis
-- [ ] Performance comparison across all implementations
-
-### 4. Presentation
-
-- [ ] Project presentation slides
-- [ ] Demo of implementations
+- [x] Unified Project README
+- [x] Zero-warning build system (Makefile)
+- [x] Programmatic SVG charting script
 
 ---
 
 ## References
 
-1. Beamer, S., Asanović, K., & Patterson, D. (2012). "Direction-optimizing breadth-first search." _SC'12: Proceedings of the International Conference on High Performance Computing, Networking, Storage and Analysis_.
-
-2. Bader, D. A., & Madduri, K. (2006). "Designing multithreaded algorithms for breadth-first search and st-connectivity on the Cray MTA-2." _ICPP 2006_.
-
-3. Merrill, D., Garland, M., & Grimshaw, A. (2012). "Scalable GPU graph traversal." _ACM SIGPLAN Notices, 47(8)_.
-
-4. Slota, G. M., Madduri, K., & Rajamanickam, S. (2014). "BFS and coloring-based parallel algorithms for strongly connected components and related problems." _IPDPS 2014_.
+1. Beamer, S., Asanović, K., & Patterson, D. (2012). "Direction-optimizing breadth-first search." _SC'12_.
+2. Bader, D. A., & Madduri, K. (2006). "Designing multithreaded algorithms for breadth-first search." _ICPP 2006_.
+3. Merrill, D., Garland, M., & Grimshaw, A. (2012). "Scalable GPU graph traversal." _PPoPP 2012_.
+4. Slota, G. M., Madduri, K., & Rajamanickam, S. (2014). "BFS and coloring-based parallel algorithms for connected components." _IPDPS 2014_.
 
 ---
 
 ## License
 
 This project is developed as part of the EE7218 High Performance Computing course.
+🏆 **Last Updated**: May 2026
 
 ---
 
