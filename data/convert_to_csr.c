@@ -1,11 +1,14 @@
 /*
- * convert_to_csr.c — Convert edge-list text file to CSR binary format
+ * convert_to_csr.c - Convert edge-list to UNDIRECTED CSR binary format
+ *
+ * For every directed edge u->v in the input, both u->v and v->u are stored.
+ * This produces an undirected graph representation in CSR format.
  *
  * Build:
- *   gcc -O3 -Wall -o convert_to_csr convert_to_csr.c
+ *   gcc -O3 -Wall -o bin/convert_to_csr data/convert_to_csr.c
  *
  * Run:
- *   ./convert_to_csr data/web-Google.txt outputs/csr_format_web-google
+ *   ./bin/convert_to_csr data/web-Google.txt outputs/csr_format_web-google
  */
 
 #include <stdio.h>
@@ -29,41 +32,51 @@ int main(int argc, char *argv[]) {
 
     int u, v;
     int max_node = -1;
-    int num_edges = 0;
+    int num_directed_edges = 0;
     char line[256];
 
-    /* ---- First pass: find max node id and edge count ---- */
+    /* ---- First pass: find max node id and directed edge count ---- */
     while (fgets(line, sizeof(line), file)) {
         if (line[0] == '#') continue;
         if (sscanf(line, "%d %d", &u, &v) != 2) continue;
         if (u > max_node) max_node = u;
         if (v > max_node) max_node = v;
-        num_edges++;
+        num_directed_edges++;
     }
 
-    if (max_node < 0 || num_edges == 0) {
+    if (max_node < 0 || num_directed_edges == 0) {
         fprintf(stderr, "Error: No valid edges found in %s\n", input_path);
         fclose(file);
         return 1;
     }
 
     int num_nodes = max_node + 1;
-    printf("Nodes : %d\n", num_nodes);
-    printf("Edges : %d\n", num_edges);
+    printf("Nodes                : %d\n", num_nodes);
+    printf("Directed edges       : %d\n", num_directed_edges);
 
     /* ---- Allocate degree array ---- */
     int *degree = calloc(num_nodes, sizeof(int));
     if (!degree) { fprintf(stderr, "Out of memory\n"); fclose(file); return 1; }
 
-    /* ---- Second pass: compute out-degrees ---- */
+    /* ---- Second pass: count undirected degree per node ---- */
+    int num_undirected_edges = 0;
     rewind(file);
     while (fgets(line, sizeof(line), file)) {
         if (line[0] == '#') continue;
         if (sscanf(line, "%d %d", &u, &v) != 2) continue;
-        degree[u]++;
+        if (u == v) {
+            degree[u]++;
+            num_undirected_edges++;
+        } else {
+            degree[u]++;
+            degree[v]++;
+            num_undirected_edges += 2;
+        }
     }
 
-    /* ---- Build row_ptr ---- */
+    printf("Undirected edges     : %d\n", num_undirected_edges);
+
+    /* ---- Build row_ptr from degree prefix sum ---- */
     int *row_ptr = malloc((num_nodes + 1) * sizeof(int));
     if (!row_ptr) { fprintf(stderr, "Out of memory\n"); fclose(file); return 1; }
     row_ptr[0] = 0;
@@ -71,7 +84,7 @@ int main(int argc, char *argv[]) {
         row_ptr[i + 1] = row_ptr[i] + degree[i];
 
     /* ---- Build col_ind ---- */
-    int *col_ind = malloc(num_edges * sizeof(int));
+    int *col_ind = malloc(num_undirected_edges * sizeof(int));
     int *current = malloc(num_nodes * sizeof(int));
     if (!col_ind || !current) { fprintf(stderr, "Out of memory\n"); fclose(file); return 1; }
 
@@ -82,7 +95,12 @@ int main(int argc, char *argv[]) {
     while (fgets(line, sizeof(line), file)) {
         if (line[0] == '#') continue;
         if (sscanf(line, "%d %d", &u, &v) != 2) continue;
-        col_ind[current[u]++] = v;
+        if (u == v) {
+            col_ind[current[u]++] = v;
+        } else {
+            col_ind[current[u]++] = v;
+            col_ind[current[v]++] = u;
+        }
     }
 
     fclose(file);
@@ -95,15 +113,15 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    fwrite(&num_nodes, sizeof(int), 1,            out);
-    fwrite(&num_edges, sizeof(int), 1,            out);
-    fwrite(row_ptr,    sizeof(int), num_nodes + 1, out);
-    fwrite(col_ind,    sizeof(int), num_edges,     out);
+    fwrite(&num_nodes,            sizeof(int), 1,                    out);
+    fwrite(&num_undirected_edges, sizeof(int), 1,                    out);
+    fwrite(row_ptr,               sizeof(int), num_nodes + 1,        out);
+    fwrite(col_ind,               sizeof(int), num_undirected_edges, out);
     fclose(out);
 
     printf("CSR binary written to: %s\n", output_path);
     printf("  row_ptr : %d ints\n", num_nodes + 1);
-    printf("  col_ind : %d ints\n", num_edges);
+    printf("  col_ind : %d ints\n", num_undirected_edges);
 
     free(degree); free(row_ptr); free(col_ind); free(current);
     return 0;
