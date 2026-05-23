@@ -63,7 +63,7 @@ cuda: check_dirs $(SRC_CUDA)
 
 # 6. Compile OpenMP + CUDA Hybrid Implementation
 hybrid: check_dirs $(SRC_HYBRID)
-	$(NVCC) $(NVCCFLAGS) -o $(HYBRID_EXE) $(SRC_HYBRID)
+	$(NVCC) $(NVCCFLAGS) -Xcompiler -fopenmp -o $(HYBRID_EXE) $(SRC_HYBRID) -lgomp
 
 # Clean up all built files
 clean:
